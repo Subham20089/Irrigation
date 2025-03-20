@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP8266 Sensor Data</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            font-size: 18px;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+        }
+    </style>
+    <script>
+        var firebaseConfig = {
+            apiKey: "AIzaSyAf5LDV_L7mGUj3q-zW8OuH5Y8Jg_18y-0",
+            authDomain: "ayush-169c4.firebaseapp.com",
+            databaseURL: "https://ayush-169c4-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "ayush-169c4",
+            storageBucket: "ayush-169c4.appspot.com",
+            messagingSenderId: "",
+            appId: ""
+        };
+        firebase.initializeApp(firebaseConfig);
+        var database = firebase.database();
+
+        let labels = [];
+        let tempData = [];
+        let humidityData = [];
+        let soilMoistureData = [];
+        let waterFlowData = [];
+
+        function fetchData() {
+            database.ref("/DHT11/Temperature").on("value", (snapshot) => {
+                let value = snapshot.val();
+                document.getElementById("temperature").innerText = value + " °C";
+                updateChart(tempChart, tempData, value);
+            });
+            database.ref("/DHT11/Humidity").on("value", (snapshot) => {
+                let value = snapshot.val();
+                document.getElementById("humidity").innerText = value + " %";
+                updateChart(humidityChart, humidityData, value);
+            });
+            database.ref("/SoilSensor/Moisture").on("value", (snapshot) => {
+                let value = snapshot.val();
+                document.getElementById("soilMoisture").innerText = value + " %";
+                updateChart(soilMoistureChart, soilMoistureData, value);
+            });
+            database.ref("/WaterFlowSensor/FlowRate").on("value", (snapshot) => {
+                let value = snapshot.val();
+                document.getElementById("waterFlow").innerText = value + " L/min";
+                updateChart(waterFlowChart, waterFlowData, value);
+            });
+        }
+
+        function updateChart(chart, dataset, value) {
+            if (dataset.length > 10) dataset.shift();
+            dataset.push(value);
+            labels.push(new Date().toLocaleTimeString());
+            if (labels.length > 10) labels.shift();
+            chart.update();
+        }
+
+        window.onload = function() {
+            fetchData();
+            setInterval(fetchData, 5000);
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>ESP8266 Sensor Data</h1>
+        <p><strong>Temperature:</strong> <span id="temperature">Loading...</span></p>
+        <canvas id="tempChart"></canvas>
+        <p><strong>Humidity:</strong> <span id="humidity">Loading...</span></p>
+        <canvas id="humidityChart"></canvas>
+        <p><strong>Soil Moisture:</strong> <span id="soilMoisture">Loading...</span></p>
+        <canvas id="soilMoistureChart"></canvas>
+        <p><strong>Water Flow Rate:</strong> <span id="waterFlow">Loading...</span></p>
+        <canvas id="waterFlowChart"></canvas>
+    </div>
+    
+    <script>
+        var tempChart = new Chart(document.getElementById("tempChart"), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: "Temperature (°C)", data: tempData, borderColor: "red", fill: false }] }
+        });
+        var humidityChart = new Chart(document.getElementById("humidityChart"), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: "Humidity (%)", data: humidityData, borderColor: "blue", fill: false }] }
+        });
+        var soilMoistureChart = new Chart(document.getElementById("soilMoistureChart"), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: "Soil Moisture (%)", data: soilMoistureData, borderColor: "green", fill: false }] }
+        });
+        var waterFlowChart = new Chart(document.getElementById("waterFlowChart"), {
+            type: 'line',
+            data: { labels: labels, datasets: [{ label: "Water Flow (L/min)", data: waterFlowData, borderColor: "purple", fill: false }] }
+        });
+    </script>
+</body>
+</html>
